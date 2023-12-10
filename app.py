@@ -14,9 +14,8 @@ from dateutil.relativedelta import relativedelta
 # Database Setup
 #################################################
 #all copied from climate ipynb file
-db_path = "/Users/athenosterberg/Desktop/Classwork/sqlalchemy-challenge/Resources/hawaii.sqlite"
-engine = create_engine(f"sqlite:///{db_path}")
-#engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -26,7 +25,6 @@ Base.prepare(autoload_with=engine)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 # Create our session (link) from Python to the DB
-
 
 #################################################
 # Flask Setup
@@ -84,11 +82,13 @@ def precipitation():
 @app.route("/station")
 def stations():
     session = Session(bind=engine)
+    #query station names
     station_query = session.query(Station.station).all()
     #code for converting from row format
     #https://stackoverflow.com/questions/71724579/row-is-not-json-serializable-error-when-sending-result-set-to-a-flask-view
     station_tuple = [tuple(row) for row in station_query]
     station_json = []
+    #create json
     for station in station_tuple:
         station_json.append({"Station":station})
     session.close()
@@ -104,9 +104,11 @@ def tobs():
     recent_date_station = session.query(Measurement.date).\
                       filter(Measurement.station == active_station_query[0][0]).\
                       order_by((Measurement.date).desc()).limit(1).all()
+    #pull date value and convert from string to date/time
     date_str_list = recent_date_station[0][0].split("-")
     date_val = dt.date(int(date_str_list[0]),int(date_str_list[1]),int(date_str_list[2]))
     start_time = date_val - relativedelta(years=1)
+    #query using date
     year_temps = session.query(Measurement.tobs).filter(Measurement.station == active_station_query[0][0]).filter(Measurement.date > start_time).all()
     temps_df = pd.DataFrame(year_temps,columns=["tobs"])
     temps_json = temps_df.to_json()
